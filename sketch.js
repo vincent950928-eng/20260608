@@ -21,8 +21,14 @@ let currentLesson = 0;
 function preload() {
   // 載入每一課的範例圖片
   for (let i = 0; i < lessons.length; i++) {
-    // 這裡可以使用本地路徑如：loadImage('assets/lesson' + i + '.png');
-    lessonImages[i] = loadImage(lessons[i].imgUrl);
+    // 加入成功與失敗的回呼函式 (Callbacks)
+    lessonImages[i] = loadImage(lessons[i].imgUrl, 
+      () => console.log(`圖片【${lessons[i].word}】載入完成`),
+      (err) => {
+        console.error(`圖片【${lessons[i].word}】載入失敗`, err);
+        // 即使失敗也讓程式繼續執行，draw() 會處理顯示問題
+      }
+    );
   }
 }
 
