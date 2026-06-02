@@ -62,27 +62,37 @@ function draw() {
   // 設定畫布背景顏色為 e7c6ff
   background('#e7c6ff');
   
-  // 計算影像的寬度和高度，為全螢幕的 50%
-  let videoW = width * 0.5;
-  let videoH = height * 0.5;
+  // 調整佈局：將畫面分為左右兩區
+  let displayW = width * 0.4;     // 單個顯示區域的寬度
+  let displayH = displayW * 0.75; // 保持 4:3 比例
+  let gap = 40;                  // 左右畫面之間的間距
   
-  // 計算影像在畫布中央的 x 和 y 座標
-  let x = (width - videoW) / 2;
-  let y = (height - videoH) / 2;
+  // 計算整體置中的起始座標
+  let totalW = displayW * 2 + gap;
+  let startX = (width - totalW) / 2;
+  let startY = (height - displayH) / 2;
+
+  // 1. 繪製左側：正確示範模型
+  fill(255);
+  noStroke();
+  rect(startX, startY, displayW, displayH, 10); // 加上圓角背景
+  if (lessonImages[currentLesson]) {
+    image(lessonImages[currentLesson], startX, startY, displayW, displayH);
+  }
+
+  // 2. 繪製右側：玩家即時畫面 (攝影機)
+  let camX = startX + displayW + gap;
   
-  // 儲存目前的繪圖狀態
   push();
-  translate(x + videoW, y); // 將原點移動到影像的右邊緣，以便進行水平翻轉
+  translate(camX + displayW, startY); // 將原點移動到右側影像的右邊緣，以便進行水平翻轉
   scale(-1, 1);
-  image(capture, 0, 0, videoW, videoH);
+  image(capture, 0, 0, displayW, displayH);
   
-  // 繪製手部關鍵點 (選配，讓玩家知道電腦有抓到手)
   if (!isSuccess) {
     if (hands.length > 0) {
-      drawKeypoints(videoW, videoH);
+      drawKeypoints(displayW, displayH);
       
-      // 增加辨識進度，將速度調快 (5% 大約 0.3 秒即可完成)
-      recognitionProgress += 5; 
+      recognitionProgress += 5;
       feedbackMsg = "偵測中... 保持住！";
       
       // 檢查是否達到 100%
@@ -101,8 +111,8 @@ function draw() {
   textAlign(CENTER, TOP);
   textSize(20);
   fill(80, 0, 150);
-  text("【 正確示範 】", startX + displayW/2, startY - 30);
-  text("【 你的畫面 】", camX + displayW/2, startY - 30);
+  text("【 正確示範 】", startX + displayW / 2, startY - 30);
+  text("【 你的畫面 】", camX + displayW / 2, startY - 30);
 
   drawUI(camX, startY, displayW, displayH);
 }
