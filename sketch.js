@@ -10,11 +10,11 @@ let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
 let lessons = [
-  { word: "你好", desc: "右手握拳，大拇指伸出並向下彎曲兩次 (點頭狀)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：你好" },
-  { word: "謝謝", desc: "右手平伸，掌心向內，指尖向上，從額頭附近向前下方移動。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：謝謝" },
-  { word: "我愛你", desc: "伸出大拇指、食指和小指 (經典 ILY 手勢)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：我愛你" },
-  { word: "對不起", desc: "右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：對不起" },
-  { word: "漂亮", desc: "五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：漂亮" }
+  { word: "你好", desc: "右手握拳，大拇指伸出並向下彎曲兩次 (點頭狀)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：你好") },
+  { word: "謝謝", desc: "右手平伸，掌心向內，指尖向上，從額頭附近向前下方移動。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：謝謝") },
+  { word: "我愛你", desc: "伸出大拇指、食指和小指 (經典 ILY 手勢)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：我愛你") },
+  { word: "對不起", desc: "右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：對不起") },
+  { word: "漂亮", desc: "五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：漂亮") }
 ];
 let currentLesson = 0;
 
