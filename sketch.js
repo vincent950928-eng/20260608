@@ -10,11 +10,11 @@ let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
 let lessons = [
-  { word: "你好", desc: "【請握拳】右手握拳，大拇指伸出（示範為簡化版：握拳）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Hello") },
-  { word: "謝謝", desc: "【請開掌】右手平伸，指尖向上（示範為簡化版：五指伸直）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Thank You") },
-  { word: "我愛你", desc: "【搖滾手勢】伸出大拇指、食指和小指，收起中指與無名指。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("I Love You") },
-  { word: "對不起", desc: "【請握拳】右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Sorry") },
-  { word: "漂亮", desc: "【請開掌】五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Beautiful") }
+  { word: "你好", desc: "右手握拳，大拇指伸出。請對準鏡頭比出「讚」的手勢。", imgUrl: "https://img.icons8.com/color/400/null/thumbs-up.png" },
+  { word: "謝謝", desc: "右手五指併攏伸直。請對準鏡頭平伸手掌。", imgUrl: "https://img.icons8.com/color/400/null/hand.png" },
+  { word: "我愛你", desc: "同時伸出大拇指、食指和小指，其餘手指收起。", imgUrl: "https://img.icons8.com/color/400/null/i-love-you-hand-gesture.png" },
+  { word: "對不起", desc: "右手握拳（暫以握拳識別）。請對著鏡頭握緊拳頭。", imgUrl: "https://img.icons8.com/color/400/null/clenched-fist.png" },
+  { word: "漂亮", desc: "開掌手勢。請將五指張開對準攝影機。", imgUrl: "https://img.icons8.com/color/400/null/palm-up.png" }
 ];
 let currentLesson = 0;
 
