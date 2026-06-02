@@ -10,11 +10,11 @@ let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
 let lessons = [
-  { word: "你好", desc: "【請握拳】右手握拳，大拇指伸出（示範為簡化版：握拳）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Hello") },
-  { word: "謝謝", desc: "【請開掌】右手平伸，指尖向上（示範為簡化版：五指伸直）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Thank You") },
-  { word: "我愛你", desc: "【搖滾手勢】伸出大拇指、食指和小指，收起中指與無名指。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("I Love You") },
-  { word: "對不起", desc: "【請握拳】右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Sorry") },
-  { word: "漂亮", desc: "【請開掌】五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Beautiful") }
+  { word: "你好", desc: "【請握拳】右手握拳，大拇指伸出（示範為簡化版：握拳）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Hello") },
+  { word: "謝謝", desc: "【請開掌】右手平伸，指尖向上（示範為簡化版：五指伸直）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Thank You") },
+  { word: "我愛你", desc: "【搖滾手勢】伸出大拇指、食指和小指，收起中指與無名指。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("I Love You") },
+  { word: "對不起", desc: "【請握拳】右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Sorry") },
+  { word: "漂亮", desc: "【請開掌】五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png?text=" + encodeURIComponent("Beautiful") }
 ];
 let currentLesson = 0;
 
@@ -123,7 +123,7 @@ function draw() {
     if (hands.length > 0 && checkGesture()) {
       drawKeypoints(displayW, displayH);
       
-      recognitionProgress += 5;
+      recognitionProgress += 2; // 降低增長速度，要求動作更穩定
       feedbackMsg = "偵測中... 保持住！";
       
       // 檢查是否達到 100%
@@ -131,8 +131,8 @@ function draw() {
         handleSuccess();
       }
     } else {
-      // 沒偵測到正確手勢時，進度快速下降
-      recognitionProgress = max(0, recognitionProgress - 2);
+      // 沒偵測到正確手勢時，進度快速退回
+      recognitionProgress = max(0, recognitionProgress - 4);
       if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
     }
   }
@@ -192,18 +192,24 @@ function drawKeypoints(vW, vH) {
   }
 }
 
-// 核心識別邏輯：判斷手指狀態
+// 改良版識別邏輯：使用距離法
 function checkGesture() {
-  if (hands.length === 0) return false;
+  if (hands.length === 0 || hands[0].confidence < 0.8) return false;
 
   let keypoints = hands[0].keypoints;
+  let wrist = keypoints[0]; // 手腕點
   
-  // 判斷手指是否伸直 (Y 座標越小代表越高)
-  // index: 8(tip), 6(pip) | middle: 12, 10 | ring: 16, 14 | pinky: 20, 18
-  let indexUp = keypoints[8].y < keypoints[6].y;
-  let middleUp = keypoints[12].y < keypoints[10].y;
-  let ringUp = keypoints[16].y < keypoints[14].y;
-  let pinkyUp = keypoints[20].y < keypoints[18].y;
+  // 檢查指尖到手腕的距離是否遠大於關節到手腕的距離
+  const isExtended = (tipIdx, pipIdx) => {
+    let dTip = dist(keypoints[tipIdx].x, keypoints[tipIdx].y, wrist.x, wrist.y);
+    let dPip = dist(keypoints[pipIdx].x, keypoints[pipIdx].y, wrist.x, wrist.y);
+    return dTip > dPip * 1.2; // 增加 20% 的容錯門檻
+  };
+
+  let indexUp = isExtended(8, 6);
+  let middleUp = isExtended(12, 10);
+  let ringUp = isExtended(16, 14);
+  let pinkyUp = isExtended(20, 18);
   
   let currentWord = lessons[currentLesson].word;
 
