@@ -123,7 +123,7 @@ function draw() {
     if (hands.length > 0 && checkGesture()) {
       drawKeypoints(displayW, displayH);
       
-      recognitionProgress += 2; // 降低增長速度，要求動作更穩定
+      recognitionProgress += 4; // 提高識別增長速度
       feedbackMsg = "偵測中... 保持住！";
       
       // 檢查是否達到 100%
@@ -132,7 +132,7 @@ function draw() {
       }
     } else {
       // 沒偵測到正確手勢時，進度快速退回
-      recognitionProgress = max(0, recognitionProgress - 4);
+      recognitionProgress = max(0, recognitionProgress - 3);
       if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
     }
   }
@@ -194,18 +194,19 @@ function drawKeypoints(vW, vH) {
 
 // 改良版識別邏輯：使用距離法
 function checkGesture() {
-  if (hands.length === 0 || hands[0].confidence < 0.8) return false;
+  if (hands.length === 0) return false;
 
   let keypoints = hands[0].keypoints;
   let wrist = keypoints[0]; // 手腕點
   
   // 檢查指尖到手腕的距離是否遠大於關節到手腕的距離
-  const isExtended = (tipIdx, pipIdx) => {
+  const isExtended = (tipIdx, midIdx) => {
     let dTip = dist(keypoints[tipIdx].x, keypoints[tipIdx].y, wrist.x, wrist.y);
-    let dPip = dist(keypoints[pipIdx].x, keypoints[pipIdx].y, wrist.x, wrist.y);
-    return dTip > dPip * 1.2; // 增加 20% 的容錯門檻
+    let dMid = dist(keypoints[midIdx].x, keypoints[midIdx].y, wrist.x, wrist.y);
+    return dTip > dMid * 1.1; // 調降門檻至 1.1，增加靈敏度
   };
 
+  let thumbUp = isExtended(4, 2); // 拇指
   let indexUp = isExtended(8, 6);
   let middleUp = isExtended(12, 10);
   let ringUp = isExtended(16, 14);
@@ -213,14 +214,19 @@ function checkGesture() {
   
   let currentWord = lessons[currentLesson].word;
 
+  if (currentWord === "你好") {
+    // 你好：大拇指伸出，其餘四指握拳
+    return thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp;
+  }
+
   if (currentWord === "我愛你") {
-    // 食指、小指要伸直，中指、無名指要收起
-    return indexUp && !middleUp && !ringUp && pinkyUp;
+    // 我愛你：大拇指、食指、小指要伸直，中指、無名指要收起
+    return thumbUp && indexUp && !middleUp && !ringUp && pinkyUp;
   } 
   
-  if (currentWord === "你好" || currentWord === "對不起") {
+  if (currentWord === "對不起") {
     // 握拳：所有手指都要收起
-    return !indexUp && !middleUp && !ringUp && !pinkyUp;
+    return !thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp;
   }
 
   if (currentWord === "謝謝" || currentWord === "漂亮") {
