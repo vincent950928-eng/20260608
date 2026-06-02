@@ -68,23 +68,25 @@ function draw() {
   image(capture, 0, 0, videoW, videoH);
   
   // 繪製手部關鍵點 (選配，讓玩家知道電腦有抓到手)
-  if (hands.length > 0) {
-    drawKeypoints(videoW, videoH);
-    
-    // 簡單識別邏輯：如果畫面中有手，進度條就增加
-    // 在專業版本中，這裡會根據 hands[0].keypoints 的座標來判斷特定姿勢
-    recognitionProgress += 1.5; 
-    feedbackMsg = "偵測中...保持動作！";
-  } else {
-    recognitionProgress = max(0, recognitionProgress - 2);
-    if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
+  if (!isSuccess) {
+    if (hands.length > 0) {
+      drawKeypoints(videoW, videoH);
+      
+      // 增加辨識進度，將速度調快 (5% 大約 0.3 秒即可完成)
+      recognitionProgress += 5; 
+      feedbackMsg = "偵測中... 保持住！";
+      
+      // 檢查是否達到 100%
+      if (recognitionProgress >= 100) {
+        handleSuccess();
+      }
+    } else {
+      // 沒偵測到手時，進度緩慢下降 (避免因閃爍而歸零)
+      recognitionProgress = max(0, recognitionProgress - 1);
+      if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
+    }
   }
   pop(); // 恢復之前的繪圖狀態
-
-  // 檢查是否識別成功
-  if (recognitionProgress >= 100) {
-    nextLesson();
-  }
 
   drawUI(x, y, videoW, videoH);
 }
