@@ -4,6 +4,7 @@ let handPose;
 let hands = [];
 let recognitionProgress = 0; // 識別進度 (0-100)
 let isModelReady = false;
+let isSuccess = false; // 是否剛辨識成功
 let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
@@ -84,8 +85,8 @@ function drawUI(x, y, videoW, videoH) {
   rect(x, y + videoH - 10, videoW, 10);
   
   // 繪製進度條
-  fill(0, 200, 100);
-  let progressW = map(recognitionProgress, 0, 100, 0, videoW);
+  fill(isSuccess ? '#4CAF50' : '#00bcd4'); // 成功時變綠色，平時藍色
+  let progressW = map(min(recognitionProgress, 100), 0, 100, 0, videoW);
   rect(x, y + videoH - 10, progressW, 10);
 
   // 繪製手語教學文字介面
@@ -118,10 +119,24 @@ function drawKeypoints(vW, vH) {
   }
 }
 
+// 處理辨識成功的邏輯
+function handleSuccess() {
+  isSuccess = true;
+  recognitionProgress = 100;
+  feedbackMsg = "✨ 太棒了！辨識正確 ✨";
+  
+  // 延遲 1.5 秒後自動進入下一課，讓玩家看清楚反饋
+  setTimeout(() => {
+    nextLesson();
+    isSuccess = false;
+  }, 1500);
+}
+
 function nextLesson() {
   currentLesson = (currentLesson + 1) % lessons.length;
   recognitionProgress = 0;
-  feedbackMsg = "太棒了！下一個動作";
+  // 確保在下一課開始時重置狀態
+  if(!isSuccess) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
 }
 
 function windowResized() {
