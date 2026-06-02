@@ -24,11 +24,15 @@ function setup() {
   // 建立攝影機擷取
   capture = createCapture(VIDEO, (stream) => {
     console.log("攝影機已成功啟動");
+  }, (err) => {
+    console.error("攝影機啟動失敗:", err);
+    feedbackMsg = "錯誤：找不到攝影機，請檢查權限或連線";
   });
+  
   capture.size(640, 480);
   
   // 檢查 ml5 是否成功載入
-  if (window.ml5) {
+  if (typeof window.ml5 !== 'undefined') {
     // 初始化 ml5 handPose
     handPose = ml5.handPose(() => {
       isModelReady = true;
@@ -37,8 +41,8 @@ function setup() {
     // 開始持續偵測
     handPose.detectStart(capture, (results) => { hands = results; });
   } else {
-    feedbackMsg = "錯誤：找不到 ml5 程式庫";
-    console.error("ml5.js library is not loaded. Please add the script tag to your HTML.");
+    feedbackMsg = "錯誤：無法載入 AI 模型，請檢查網路連線";
+    console.error("ml5.js library is not loaded.");
   }
 
   // 隱藏預設的 HTML 影片元素，因為我們將在畫布上繪製它
