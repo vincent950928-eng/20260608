@@ -22,11 +22,13 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   
   // 建立攝影機擷取
-  capture = createCapture(VIDEO);
+  capture = createCapture(VIDEO, (stream) => {
+    console.log("攝影機已成功啟動");
+  });
   capture.size(640, 480);
   
   // 檢查 ml5 是否成功載入
-  if (typeof ml5 !== 'undefined') {
+  if (window.ml5) {
     // 初始化 ml5 handPose
     handPose = ml5.handPose(() => {
       isModelReady = true;
