@@ -18,23 +18,19 @@ let lessons = [
 ];
 let currentLesson = 0;
 
-function preload() {
-  // 載入每一課的範例圖片
-  for (let i = 0; i < lessons.length; i++) {
-    // 加入成功與失敗的回呼函式 (Callbacks)
-    lessonImages[i] = loadImage(lessons[i].imgUrl, 
-      () => console.log(`圖片【${lessons[i].word}】載入完成`),
-      (err) => {
-        console.error(`圖片【${lessons[i].word}】載入失敗`, err);
-        // 即使失敗也讓程式繼續執行，draw() 會處理顯示問題
-      }
-    );
-  }
-}
-
 function setup() {
   // 建立一個全螢幕的畫布
   createCanvas(windowWidth, windowHeight);
+
+  // 將圖片載入移到 setup 中，改為非同步載入，避免阻塞 preload
+  lessons.forEach((lesson, i) => {
+    loadImage(lesson.imgUrl, img => {
+      lessonImages[i] = img;
+      console.log(`圖片【${lesson.word}】載入成功`);
+    }, err => {
+      console.error(`圖片【${lesson.word}】載入失敗:`, err);
+    });
+  });
   
   // 建立攝影機擷取
   capture = createCapture(VIDEO, (stream) => {
@@ -52,9 +48,9 @@ function setup() {
     handPose = ml5.handPose(() => {
       isModelReady = true;
       feedbackMsg = "請對準攝影機比出手語";
+      // 確保模型準備好後才開始偵測
+      handPose.detectStart(capture, (results) => { hands = results; });
     });
-    // 開始持續偵測
-    handPose.detectStart(capture, (results) => { hands = results; });
   } else {
     feedbackMsg = "錯誤：無法載入 AI 模型，請檢查網路連線";
     console.error("ml5.js library is not loaded.");
