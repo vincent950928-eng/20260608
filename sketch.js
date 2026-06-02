@@ -1,6 +1,7 @@
 // 宣告一個全域變數來儲存攝影機擷取的影像
 let capture;
 let handPose;
+let lessonImages = [];
 let hands = [];
 let recognitionProgress = 0; // 識別進度 (0-100)
 let isModelReady = false;
@@ -9,13 +10,21 @@ let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
 let lessons = [
-  { word: "你好", desc: "右手握拳，大拇指伸出並向下彎曲兩次 (點頭狀)。" },
-  { word: "謝謝", desc: "右手平伸，掌心向內，指尖向上，從額頭附近向前下方移動。" },
-  { word: "我愛你", desc: "伸出大拇指、食指和小指 (經典 ILY 手勢)。" },
-  { word: "對不起", desc: "右手握拳，大拇指伸出，放在額頭前點兩下。" },
-  { word: "漂亮", desc: "五指併攏，掌心向臉部，在臉前輕輕繞一圈。" }
+  { word: "你好", desc: "右手握拳，大拇指伸出並向下彎曲兩次 (點頭狀)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：你好" },
+  { word: "謝謝", desc: "右手平伸，掌心向內，指尖向上，從額頭附近向前下方移動。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：謝謝" },
+  { word: "我愛你", desc: "伸出大拇指、食指和小指 (經典 ILY 手勢)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：我愛你" },
+  { word: "對不起", desc: "右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：對不起" },
+  { word: "漂亮", desc: "五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=示範：漂亮" }
 ];
 let currentLesson = 0;
+
+function preload() {
+  // 載入每一課的範例圖片
+  for (let i = 0; i < lessons.length; i++) {
+    // 這裡可以使用本地路徑如：loadImage('assets/lesson' + i + '.png');
+    lessonImages[i] = loadImage(lessons[i].imgUrl);
+  }
+}
 
 function setup() {
   // 建立一個全螢幕的畫布
@@ -88,23 +97,31 @@ function draw() {
   }
   pop(); // 恢復之前的繪圖狀態
 
-  drawUI(x, y, videoW, videoH);
+  // 繪製標籤
+  textAlign(CENTER, TOP);
+  textSize(20);
+  fill(80, 0, 150);
+  text("【 正確示範 】", startX + displayW/2, startY - 30);
+  text("【 你的畫面 】", camX + displayW/2, startY - 30);
+
+  drawUI(camX, startY, displayW, displayH);
 }
 
 // 繪製 UI 介面
 function drawUI(x, y, videoW, videoH) {
   // 繪製識別進度條背景
   noStroke();
-  fill(255, 255, 255, 150);
-  rect(x, y + videoH - 10, videoW, 10);
+  fill(0, 0, 0, 50);
+  rect(x, y + videoH - 10, videoW, 10, 5);
   
   // 繪製進度條
   fill(isSuccess ? '#4CAF50' : '#00bcd4'); // 成功時變綠色，平時藍色
   let progressW = map(min(recognitionProgress, 100), 0, 100, 0, videoW);
-  rect(x, y + videoH - 10, progressW, 10);
+  rect(x, y + videoH - 10, progressW, 10, 5);
 
   // 繪製手語教學文字介面
   textAlign(CENTER, CENTER);
+  rectMode(CENTER);
   
   // 顯示當前詞彙
   fill(80, 0, 150); // 深紫色文字
@@ -113,7 +130,7 @@ function drawUI(x, y, videoW, videoH) {
 
   // 顯示動作指引
   fill(50);
-  textSize(height * 0.025);
+  textSize(22);
   text(lessons[currentLesson].desc, width / 2, y + videoH + height * 0.05);
 
   // 顯示當前狀態提示
