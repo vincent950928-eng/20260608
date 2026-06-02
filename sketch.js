@@ -21,12 +21,17 @@ let currentLesson = 0;
 function setup() {
   // 建立一個全螢幕的畫布
   createCanvas(windowWidth, windowHeight);
+  
+  // 確保即使發生錯誤，也能在 3 秒後嘗試強制隱藏載入畫面
+  setTimeout(hideLoadingScreen, 3000);
 
   // 將圖片載入移到 setup 中，改為非同步載入，避免阻塞 preload
   lessons.forEach((lesson, i) => {
     loadImage(lesson.imgUrl, img => {
       lessonImages[i] = img;
       console.log(`圖片【${lesson.word}】載入成功`);
+      // 每載入一張圖就檢查一次是否可以隱藏載入畫面
+      hideLoadingScreen();
     }, err => {
       console.error(`圖片【${lesson.word}】載入失敗:`, err);
     });
@@ -48,16 +53,30 @@ function setup() {
     handPose = ml5.handPose(() => {
       isModelReady = true;
       feedbackMsg = "請對準攝影機比出手語";
+      console.log("ml5 模型已就緒");
       // 確保模型準備好後才開始偵測
       handPose.detectStart(capture, (results) => { hands = results; });
+      hideLoadingScreen();
     });
   } else {
     feedbackMsg = "錯誤：無法載入 AI 模型，請檢查網路連線";
     console.error("ml5.js library is not loaded.");
+    hideLoadingScreen();
   }
 
   // 隱藏預設的 HTML 影片元素，因為我們將在畫布上繪製它
   capture.hide();
+}
+
+// 強制隱藏載入畫面的函式
+function hideLoadingScreen() {
+  let loadingDiv = document.getElementById('p5_loading');
+  if (loadingDiv) {
+    // 只有當模型準備好或是已經過了強制的 3 秒，才移除
+    if (isModelReady || (typeof millis !== 'undefined' && millis() > 3000)) {
+      loadingDiv.style.display = 'none';
+    }
+  }
 }
 
 function draw() {
