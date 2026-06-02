@@ -59,6 +59,10 @@ function setup() {
 }
 
 function draw() {
+  // 每一幀開始時重設模式，避免 drawUI 裡的設定影響到下一幀的佈局
+  rectMode(CORNER);
+  imageMode(CORNER);
+
   // 設定畫布背景顏色為 e7c6ff
   background('#e7c6ff');
   
@@ -77,7 +81,13 @@ function draw() {
   noStroke();
   rect(startX, startY, displayW, displayH, 10); // 加上圓角背景
   if (lessonImages[currentLesson]) {
+    // 如果圖片載入成功則顯示
     image(lessonImages[currentLesson], startX, startY, displayW, displayH);
+  } else {
+    // 如果圖片還在載入或失敗，顯示提示文字
+    fill(150);
+    textAlign(CENTER, CENTER);
+    text("範例圖片載入中...", startX + displayW / 2, startY + displayH / 2);
   }
 
   // 2. 繪製右側：玩家即時畫面 (攝影機)
@@ -121,13 +131,14 @@ function draw() {
 function drawUI(x, y, videoW, videoH) {
   // 繪製識別進度條背景
   noStroke();
+  rectMode(CORNER); 
   fill(0, 0, 0, 50);
   rect(x, y + videoH - 10, videoW, 10, 5);
   
   // 繪製進度條
   fill(isSuccess ? '#4CAF50' : '#00bcd4'); // 成功時變綠色，平時藍色
   let progressW = map(min(recognitionProgress, 100), 0, 100, 0, videoW);
-  rect(x, y + videoH - 10, progressW, 10, 5);
+  rect(x, y + videoH - 10, progressW, 10, 5); // 進度條使用 CORNER 模式繪製
 
   // 繪製手語教學文字介面
   textAlign(CENTER, CENTER);
