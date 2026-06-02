@@ -25,13 +25,19 @@ function setup() {
   capture = createCapture(VIDEO);
   capture.size(640, 480);
   
-  // 初始化 ml5 handPose
-  handPose = ml5.handPose(() => {
-    isModelReady = true;
-    feedbackMsg = "請對準攝影機比出手語";
-  });
-  // 開始持續偵測
-  handPose.detectStart(capture, (results) => { hands = results; });
+  // 檢查 ml5 是否成功載入
+  if (typeof ml5 !== 'undefined') {
+    // 初始化 ml5 handPose
+    handPose = ml5.handPose(() => {
+      isModelReady = true;
+      feedbackMsg = "請對準攝影機比出手語";
+    });
+    // 開始持續偵測
+    handPose.detectStart(capture, (results) => { hands = results; });
+  } else {
+    feedbackMsg = "錯誤：找不到 ml5 程式庫";
+    console.error("ml5.js library is not loaded. Please add the script tag to your HTML.");
+  }
 
   // 隱藏預設的 HTML 影片元素，因為我們將在畫布上繪製它
   capture.hide();
