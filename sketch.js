@@ -10,11 +10,11 @@ let feedbackMsg = "等待模型載入...";
 
 // 初級手語教學內容
 let lessons = [
-  { word: "你好", desc: "右手握拳，大拇指伸出並向下彎曲兩次 (點頭狀)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：你好") },
-  { word: "謝謝", desc: "右手平伸，掌心向內，指尖向上，從額頭附近向前下方移動。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：謝謝") },
-  { word: "我愛你", desc: "伸出大拇指、食指和小指 (經典 ILY 手勢)。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：我愛你") },
-  { word: "對不起", desc: "右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：對不起") },
-  { word: "漂亮", desc: "五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://placehold.jp/24/5000a0/ffffff/400x300.png?text=" + encodeURIComponent("示範：漂亮") }
+  { word: "你好", desc: "【請握拳】右手握拳，大拇指伸出（示範為簡化版：握拳）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Hello") },
+  { word: "謝謝", desc: "【請開掌】右手平伸，指尖向上（示範為簡化版：五指伸直）。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Thank You") },
+  { word: "我愛你", desc: "【搖滾手勢】伸出大拇指、食指和小指，收起中指與無名指。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("I Love You") },
+  { word: "對不起", desc: "【請握拳】右手握拳，大拇指伸出，放在額頭前點兩下。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Sorry") },
+  { word: "漂亮", desc: "【請開掌】五指併攏，掌心向臉部，在臉前輕輕繞一圈。", imgUrl: "https://dummyimage.com/400x300/5000a0/fff.png&text=" + encodeURIComponent("Beautiful") }
 ];
 let currentLesson = 0;
 
@@ -120,7 +120,7 @@ function draw() {
   image(capture, 0, 0, displayW, displayH);
   
   if (!isSuccess) {
-    if (hands.length > 0) {
+    if (hands.length > 0 && checkGesture()) {
       drawKeypoints(displayW, displayH);
       
       recognitionProgress += 5;
@@ -131,8 +131,8 @@ function draw() {
         handleSuccess();
       }
     } else {
-      // 沒偵測到手時，進度緩慢下降 (避免因閃爍而歸零)
-      recognitionProgress = max(0, recognitionProgress - 1);
+      // 沒偵測到正確手勢時，進度快速下降
+      recognitionProgress = max(0, recognitionProgress - 2);
       if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
     }
   }
@@ -190,6 +190,39 @@ function drawKeypoints(vW, vH) {
     let mappedY = map(keypoint.y, 0, capture.height, 0, vH);
     ellipse(mappedX, mappedY, 8, 8);
   }
+}
+
+// 核心識別邏輯：判斷手指狀態
+function checkGesture() {
+  if (hands.length === 0) return false;
+
+  let keypoints = hands[0].keypoints;
+  
+  // 判斷手指是否伸直 (Y 座標越小代表越高)
+  // index: 8(tip), 6(pip) | middle: 12, 10 | ring: 16, 14 | pinky: 20, 18
+  let indexUp = keypoints[8].y < keypoints[6].y;
+  let middleUp = keypoints[12].y < keypoints[10].y;
+  let ringUp = keypoints[16].y < keypoints[14].y;
+  let pinkyUp = keypoints[20].y < keypoints[18].y;
+  
+  let currentWord = lessons[currentLesson].word;
+
+  if (currentWord === "我愛你") {
+    // 食指、小指要伸直，中指、無名指要收起
+    return indexUp && !middleUp && !ringUp && pinkyUp;
+  } 
+  
+  if (currentWord === "你好" || currentWord === "對不起") {
+    // 握拳：所有手指都要收起
+    return !indexUp && !middleUp && !ringUp && !pinkyUp;
+  }
+
+  if (currentWord === "謝謝" || currentWord === "漂亮") {
+    // 開掌：所有手指都要伸直
+    return indexUp && middleUp && ringUp && pinkyUp;
+  }
+
+  return false;
 }
 
 // 處理辨識成功的邏輯
