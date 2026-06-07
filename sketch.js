@@ -7,6 +7,7 @@ let recognitionProgress = 0; // 識別進度 (0-100)
 let isModelReady = false;
 let isSuccess = false; // 是否剛辨識成功
 let feedbackMsg = "等待模型載入...";
+let gameState = "WAITING"; // 遊戲狀態：WAITING (等待), PLAYING (進行中), FINISHED (結束)
 
 // 初級手語教學內容
 let lessons = [
@@ -101,14 +102,23 @@ function draw() {
   fill(255);
   noStroke();
   rect(startX, startY, displayW, displayH, 10); // 加上圓角背景
-  if (lessonImages[currentLesson]) {
-    // 如果圖片載入成功則顯示
-    image(lessonImages[currentLesson], startX, startY, displayW, displayH);
+
+  if (gameState === "PLAYING") {
+    if (lessonImages[currentLesson]) {
+      // 如果圖片載入成功則顯示
+      image(lessonImages[currentLesson], startX, startY, displayW, displayH);
+    } else {
+      // 如果圖片還在載入或失敗，顯示提示文字
+      fill(150);
+      textAlign(CENTER, CENTER);
+      text("範例圖片載入中...", startX + displayW / 2, startY + displayH / 2);
+    }
   } else {
-    // 如果圖片還在載入或失敗，顯示提示文字
-    fill(150);
+    fill(100, 50, 200);
     textAlign(CENTER, CENTER);
-    text("範例圖片載入中...", startX + displayW / 2, startY + displayH / 2);
+    textSize(24);
+    let msg = (gameState === "WAITING") ? "請比出 👍 (讚) 開始練習" : "練習結束！\n請比出 👍 (讚) 重新開始";
+    text(msg, startX + displayW / 2, startY + displayH / 2);
   }
 
   // 2. 繪製右側：玩家即時畫面 (攝影機)
@@ -119,21 +129,37 @@ function draw() {
   scale(-1, 1);
   image(capture, 0, 0, displayW, displayH);
   
-  if (!isSuccess) {
-    if (hands.length > 0 && checkGesture()) {
-      drawKeypoints(displayW, displayH);
-      
-      recognitionProgress += 4; // 提高識別增長速度
-      feedbackMsg = "偵測中... 保持住！";
-      
-      // 檢查是否達到 100%
-      if (recognitionProgress >= 100) {
-        handleSuccess();
+  if (gameState === "PLAYING") {
+    if (!isSuccess) {
+      if (hands.length > 0 && checkGesture()) {
+        drawKeypoints(displayW, displayH);
+        recognitionProgress += 5; // 稍微提高增長速度
+        feedbackMsg = "偵測中... 保持住！";
+        if (recognitionProgress >= 100) handleSuccess();
+      } else {
+        // 大幅調降扣分速度（從 2 改為 0.5）
+        // 這會讓進度從 100% 降到 0% 需要約 3-4 秒（假設 60 FPS），給予玩家緩衝時間
+        recognitionProgress = max(0, recognitionProgress - 0.5); 
+        
+        if(isModelReady) {
+          // 當進度還在倒退時，給予不同的文字提示
+          feedbackMsg = recognitionProgress > 0 ? "稍微偏了，請調整手勢！" : "請比出：「" + lessons[currentLesson].word + "」";
+        }
       }
-    } else {
-      // 沒偵測到正確手勢時，進度快速退回
-      recognitionProgress = max(0, recognitionProgress - 3);
-      if(isModelReady) feedbackMsg = "請比出：「" + lessons[currentLesson].word + "」";
+      
+      // 檢查是否要結束遊戲 (倒讚)
+      if (detectThumbsDown()) {
+        gameState = "FINISHED";
+      }
+    }
+  } else {
+    // 在 WAITING 或 FINISHED 狀態下，偵測到「讚」就開始
+    if (detectThumbsUp()) {
+      gameState = "PLAYING";
+      currentLesson = 0;
+      recognitionProgress = 0;
+      isSuccess = false;
+      feedbackMsg = "準備開始...";
     }
   }
   pop(); // 恢復之前的繪圖狀態
@@ -165,21 +191,86 @@ function drawUI(x, y, videoW, videoH) {
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
   
-  // 顯示當前詞彙
-  fill(80, 0, 150); // 深紫色文字
-  textSize(height * 0.05);
-  text("手語練習：" + lessons[currentLesson].word, width / 2, y - height * 0.08);
+  if (gameState === "PLAYING") {
+    // 顯示當前詞彙
+    fill(80, 0, 150); 
+    textSize(height * 0.05);
+    text("手語練習：" + lessons[currentLesson].word, width / 2, y - height * 0.08);
 
-  // 顯示動作指引
-  fill(50);
-  textSize(22);
-  text(lessons[currentLesson].desc, width / 2, y + videoH + height * 0.05);
+    // 顯示動作指引
+    fill(50);
+    textSize(22);
+    text(lessons[currentLesson].desc, width / 2, y + videoH + height * 0.05);
+  } else if (gameState === "WAITING") {
+    fill(80, 0, 150);
+    textSize(height * 0.05);
+    text("歡迎來到手語教室", width / 2, y - height * 0.08);
+    fill(50);
+    textSize(22);
+    text("請對準鏡頭比出 👍 開始練習", width / 2, y + videoH + height * 0.05);
+  } else {
+    fill(80, 0, 150);
+    textSize(height * 0.05);
+    text("練習結束", width / 2, y - height * 0.08);
+    fill(50);
+    textSize(22);
+    text("比出 👎 結束，比出 👍 重新開始", width / 2, y + videoH + height * 0.05);
+  }
 
   // 顯示當前狀態提示
   fill(100, 50, 200);
   text(feedbackMsg, width / 2, height - 50);
 }
 
+// 計算手掌旋轉角度 (弧度)
+// 使用手腕 (0) 到中指根部 (9) 的向量作為手掌朝向基準
+function getHandRotation() {
+  if (hands.length === 0) return 0;
+  let kp = hands[0].keypoints;
+  return atan2(kp[9].y - kp[0].y, kp[9].x - kp[0].x);
+}
+
+// 偵測「讚」(Thumbs Up)
+function detectThumbsUp() {
+  if (hands.length === 0) return false;
+  let keypoints = hands[0].keypoints;
+
+  // 使用更精確的伸展判斷
+  const isFingerExtended = (tip, pip, mcp) => {
+    return dist(keypoints[tip].x, keypoints[tip].y, keypoints[mcp].x, keypoints[mcp].y) > 
+           dist(keypoints[pip].x, keypoints[pip].y, keypoints[mcp].x, keypoints[mcp].y) * 1.3;
+  };
+
+  // 角度判斷：手掌應垂直向上 (允許正負 45 度誤差)
+  let rot = getHandRotation();
+  let isUpright = (rot < -PI/4 && rot > -3*PI/4);
+
+  // 大拇指伸出，且方向向上，其餘四指收起
+  let thumbUp = isFingerExtended(4, 3, 2) && (keypoints[4].y < keypoints[3].y) && isUpright;
+  let indexDown = !isFingerExtended(8, 6, 5);
+  let middleDown = !isFingerExtended(12, 10, 9);
+  let othersDown = indexDown && middleDown; // 簡化判斷以提高靈敏度
+  
+  return thumbUp && othersDown;
+}
+
+// 偵測「倒讚」(Thumbs Down)
+function detectThumbsDown() {
+  if (hands.length === 0) return false;
+  let keypoints = hands[0].keypoints;
+  const isFingerExtended = (tip, pip, mcp) => {
+    return dist(keypoints[tip].x, keypoints[tip].y, keypoints[mcp].x, keypoints[mcp].y) > 
+           dist(keypoints[pip].x, keypoints[pip].y, keypoints[mcp].x, keypoints[mcp].y) * 1.3;
+  };
+
+  // 角度判斷：手掌應垂直向下
+  let rot = getHandRotation();
+  let isDownside = (rot > PI/4 && rot < 3*PI/4);
+
+  let thumbDown = isFingerExtended(4, 3, 2) && (keypoints[4].y > keypoints[3].y) && isDownside;
+  let othersDown = !isFingerExtended(8, 6, 5) && !isFingerExtended(12, 10, 9);
+  return thumbDown && othersDown;
+}
 // 繪製手部特徵點輔助玩家
 function drawKeypoints(vW, vH) {
   fill(0, 255, 0);
@@ -197,31 +288,34 @@ function checkGesture() {
   if (hands.length === 0) return false;
 
   let keypoints = hands[0].keypoints;
-  let wrist = keypoints[0]; // 手腕點
-  
-  // 檢查指尖到手腕的距離是否遠大於關節到手腕的距離
-  const isExtended = (tipIdx, midIdx) => {
-    let dTip = dist(keypoints[tipIdx].x, keypoints[tipIdx].y, wrist.x, wrist.y);
-    let dMid = dist(keypoints[midIdx].x, keypoints[midIdx].y, wrist.x, wrist.y);
-    return dTip > dMid * 1.1; // 調降門檻至 1.1，增加靈敏度
+
+  // 改進的伸展判斷：比較 Tip-MCP 與 PIP-MCP 的距離
+  const isExtended = (tip, pip, mcp, threshold = 1.3) => {
+    return dist(keypoints[tip].x, keypoints[tip].y, keypoints[mcp].x, keypoints[mcp].y) > 
+           dist(keypoints[pip].x, keypoints[pip].y, keypoints[mcp].x, keypoints[mcp].y) * threshold;
   };
 
-  let thumbUp = isExtended(4, 2); // 拇指
-  let indexUp = isExtended(8, 6);
-  let middleUp = isExtended(12, 10);
-  let ringUp = isExtended(16, 14);
-  let pinkyUp = isExtended(20, 18);
+  // 取得手掌旋轉狀態
+  let rot = getHandRotation();
+  let isUpright = (rot < -PI/4 && rot > -3*PI/4);
+
+  // 取得各指狀態 (使用 MCP 點 5, 9, 13, 17 作為根部)
+  let thumbUp = isExtended(4, 3, 2, 1.2); 
+  let indexUp = isExtended(8, 6, 5);
+  let middleUp = isExtended(12, 10, 9);
+  let ringUp = isExtended(16, 14, 13);
+  let pinkyUp = isExtended(20, 18, 17);
   
   let currentWord = lessons[currentLesson].word;
 
   if (currentWord === "你好") {
-    // 你好：大拇指伸出，其餘四指握拳
-    return thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp;
+    // 你好：大拇指伸出，其餘握拳，且手掌朝上
+    return thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp && isUpright;
   }
 
   if (currentWord === "我愛你") {
-    // 我愛你：大拇指、食指、小指要伸直，中指、無名指要收起
-    return thumbUp && indexUp && !middleUp && !ringUp && pinkyUp;
+    // 我愛你：指定手指伸直，且手掌方向需正常向上
+    return thumbUp && indexUp && !middleUp && !ringUp && pinkyUp && isUpright;
   } 
   
   if (currentWord === "對不起") {
@@ -230,8 +324,8 @@ function checkGesture() {
   }
 
   if (currentWord === "謝謝" || currentWord === "漂亮") {
-    // 開掌：所有手指都要伸直
-    return indexUp && middleUp && ringUp && pinkyUp;
+    // 開掌：所有手指伸直，手掌向上
+    return indexUp && middleUp && ringUp && pinkyUp && isUpright;
   }
 
   return false;
