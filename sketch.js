@@ -153,13 +153,24 @@ function draw() {
       }
     }
   } else {
-    // 在 WAITING 或 FINISHED 狀態下，偵測到「讚」就開始
+    // 在 WAITING 或 FINISHED 狀態下，偵測到「讚」並累積進度以自動開始
     if (detectThumbsUp()) {
-      gameState = "PLAYING";
-      currentLesson = 0;
-      recognitionProgress = 0;
-      isSuccess = false;
-      feedbackMsg = "準備開始...";
+      recognitionProgress += 5; // 增加啟動進度
+      feedbackMsg = "偵測到 👍！請保持住以開始練習...";
+      
+      if (recognitionProgress >= 100) {
+        gameState = "PLAYING";
+        currentLesson = 0;
+        recognitionProgress = 0;
+        isSuccess = false;
+        feedbackMsg = "遊戲開始！請比出：「" + lessons[currentLesson].word + "」";
+      }
+    } else {
+      // 未偵測到手勢時，進度緩慢倒退
+      recognitionProgress = max(0, recognitionProgress - 2);
+      if (isModelReady && recognitionProgress === 0) {
+        feedbackMsg = (gameState === "WAITING") ? "請比出 👍 開始練習" : "比出 👍 重新開始";
+      }
     }
   }
   pop(); // 恢復之前的繪圖狀態
