@@ -124,11 +124,12 @@ function draw() {
     if (hands.length > 0 && checkGesture()) {
       drawKeypoints(displayW, displayH);
       recognitionProgress += 5; // 稍微提高增長速度
-      feedbackMsg = "偵測中... 保持住！";
+      // 加入百分比顯示，讓玩家知道進度
+      feedbackMsg = "偵測成功！請保持住... " + floor(recognitionProgress) + "%";
       if (recognitionProgress >= 100) handleSuccess();
     } else {
       // 大幅調降扣分速度
-      recognitionProgress = max(0, recognitionProgress - 0.5); 
+      recognitionProgress = max(0, recognitionProgress - 1); 
       
       if(isModelReady) {
         // 當進度還在倒退時，給予不同的文字提示
@@ -154,12 +155,12 @@ function drawUI(x, y, videoW, videoH) {
   noStroke();
   rectMode(CORNER); 
   fill(0, 0, 0, 50);
-  rect(x, y + videoH - 10, videoW, 10, 5);
+  rect(x, y + videoH - 15, videoW, 15, 5); // 加厚進度條
   
   // 繪製進度條
   fill(isSuccess ? '#4CAF50' : '#00bcd4'); // 成功時變綠色，平時藍色
   let progressW = map(min(recognitionProgress, 100), 0, 100, 0, videoW);
-  rect(x, y + videoH - 10, progressW, 10, 5); // 進度條使用 CORNER 模式繪製
+  rect(x, y + videoH - 15, progressW, 15, 5); // 加厚進度條
 
   // 繪製手語教學文字介面
   textAlign(CENTER, CENTER);
@@ -226,8 +227,9 @@ function checkGesture() {
   let currentWord = lessons[currentLesson].word;
 
   if (currentWord === "你好") {
-    // 你好：大拇指伸出，其餘握拳，且手掌朝上
-    return thumbUp && !indexUp && !middleUp && !ringUp && !pinkyUp && isUpright;
+    // 放寬判定：只要大拇指伸出，且主要的食指、中指有收起即可
+    let isUprightWide = (rot < -PI/8 && rot > -7*PI/8); // 放寬角度到正負 67.5 度
+    return thumbUp && !indexUp && !middleUp && isUprightWide;
   }
 
   if (currentWord === "我愛你") {
